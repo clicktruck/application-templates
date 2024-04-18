@@ -1,0 +1,65 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:yaml", "yaml")
+---
+#! See https://docs.vmware.com/en/Application-Service-Adapter-for-VMware-Tanzu-Application-Platform/1.1/tas-adapter/install.html#configure-the-installation-settings
+
+#@ def config():
+ceip_policy_disclosed: true
+
+#@ if data.values.tas_adapter.credentials.cf.admin.username != "":
+admin:
+  #! List of existing users to grant admin privileges
+  users:
+    - #@ data.values.tas_adapter.credentials.cf.admin.username
+#@ end
+
+shared:
+  ingress_issuer: letsencrypt-contour-cluster-issuer
+
+api_ingress:
+#! FQDN used to access the CF API
+  fqdn: #@ "{}".format(data.values.tas_adapter.domains.main)
+  tls:
+#! Name of the secret containing the TLS certificate for the CF API (PEM format)
+    secret_name: #@ data.values.tas_adapter.ingress.contour_tls_secret
+#! Namespace containing the CF API TLS secret
+    namespace: #@ data.values.tas_adapter.ingress.contour_tls_namespace
+
+app_ingress:
+#! Default application domain
+  default_domain: #@ data.values.tas_adapter.domains.main
+  tls:
+#! Name of the secret containing the TLS certificate for the default application domain (PEM format)
+    secret_name: #@ data.values.tas_adapter.ingress.contour_tls_secret
+#! Namespace containing the CF API TLS secret
+    namespace: #@ data.values.tas_adapter.ingress.contour_tls_namespace
+
+app_registry:
+  credentials:
+    #@ if ((data.values.tap.credentials.registry.host).find(".dkr.ecr.") > -1) == False:
+    namespace: #@ data.values.tas_adapter.namespace
+    secret_name: container-registry-credentials
+    #@ end
+    #@ if (data.values.tap.credentials.registry.host).find(".dkr.ecr.") > -1:
+    #! The Amazon Resource Name (ARN) of an AWS IAM role that can be used to access an Elastic Container Registry (ECR)
+    aws_iam_role_arn: #@ data.values.tas_adapter.registry.repositories.aws.iam_role_arn
+    #@ end
+  hostname: #@ data.values.tap.credentials.registry.host
+  repository_prefix: #@ "{}/{}".format(data.values.tap.credentials.registry.host, data.values.tas_adapter.registry.prefix)
+
+#! Name of the kpack cluster builder to use for staging
+kpack_clusterbuilder_name: full
+
+#! Enable the experimental Cartographer integration
+experimental_use_cartographer: true
+
+#@ end
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tas-adapter-values
+  namespace: #@ data.values.tas_adapter.namespace
+type: Opaque
+stringData:
+  values.yml: #@ yaml.encode(config())

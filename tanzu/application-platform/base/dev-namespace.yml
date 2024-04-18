@@ -1,0 +1,85 @@
+#@ load("@ytt:data", "data")
+---
+#@ if data.values.tap.devNamespace != "default" and data.values.tap.devNamespace != "":
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: #@ data.values.tap.devNamespace
+#@ end
+---
+#@ if ((data.values.tap.cluster.provider == "eks") and (data.values.tap.credentials.registry.host).find(".dkr.ecr.") > -1) == False:
+apiVersion: secretgen.carvel.dev/v1alpha1
+kind: SecretImport
+metadata:
+  name: container-registry-credentials
+  namespace: #@ data.values.tap.devNamespace
+spec:
+  fromNamespace: #@ data.values.tap.namespace
+#@ end
+---
+apiVersion: secretgen.carvel.dev/v1alpha1
+kind: SecretImport
+metadata:
+  name: tanzu-network-credentials
+  namespace: #@ data.values.tap.devNamespace
+spec:
+  fromNamespace: #@ data.values.tap.namespace
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: git-https
+  namespace: #@ data.values.tap.devNamespace
+  annotations:
+    tekton.dev/git-0: #@ "https://{}".format(data.values.tap.credentials.git.host)
+type: kubernetes.io/basic-auth
+stringData:
+  username: #@ data.values.tap.credentials.git.username
+  password: #@ data.values.tap.credentials.git.token
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default
+  namespace: #@ data.values.tap.devNamespace
+  #@ if (data.values.tap.cluster.provider == "eks") and (data.values.tap.credentials.registry.host).find(".dkr.ecr.") > -1:
+  annotations:
+    eks.amazonaws.com/role-arn: #@ data.values.tap.supply_chain.aws.iam_role_arn
+  #@ end
+secrets:
+#@ if ((data.values.tap.cluster.provider == "eks") and (data.values.tap.credentials.registry.host).find(".dkr.ecr.") > -1) == False:
+  - name: container-registry-credentials
+#@ end
+  - name: git-https
+imagePullSecrets:
+#@ if ((data.values.tap.cluster.provider == "eks") and (data.values.tap.credentials.registry.host).find(".dkr.ecr.") > -1) == False:
+  - name: container-registry-credentials
+#@ end
+  - name: tanzu-network-credentials
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: #@ "{}-{}".format(data.values.tap.devNamespace, "permit-deliverable")
+  namespace: #@ data.values.tap.devNamespace
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: deliverable
+subjects:
+  - kind: ServiceAccount
+    name: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: #@ "{}-{}".format(data.values.tap.devNamespace, "permit-workload")
+  namespace: #@ data.values.tap.devNamespace
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: workload
+subjects:
+  - kind: ServiceAccount
+    name: default
+

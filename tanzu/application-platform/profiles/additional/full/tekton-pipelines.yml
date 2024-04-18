@@ -1,0 +1,297 @@
+#@ load("@ytt:data", "data")
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: maven-java-tekton-pipeline
+  labels:
+    apps.tanzu.vmware.com/pipeline: test
+    apps.tanzu.vmware.com/language: java
+    apps.tanzu.vmware.com/build-engine: maven
+  namespace: #@ data.values.tap.devNamespace
+spec:
+  params:
+    - name: source-url
+    - name: source-revision
+  tasks:
+    - name: test
+      params:
+        - name: source-url
+          value: $(params.source-url)
+        - name: source-revision
+          value: $(params.source-revision)
+      taskSpec:
+        params:
+          - name: source-url
+          - name: source-revision
+        steps:
+          - name: test
+            image: maven:3.8-eclipse-temurin-17
+            script: |-
+              cd `mktemp -d`
+              wget -qO- $(params.source-url) | tar xvz
+              ./mvnw test
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: gradle-java-tekton-pipeline
+  labels:
+    apps.tanzu.vmware.com/pipeline: test
+    apps.tanzu.vmware.com/language: java
+    apps.tanzu.vmware.com/build-engine: gradle
+  namespace: #@ data.values.tap.devNamespace
+spec:
+  params:
+    - name: source-url
+    - name: source-revision
+  tasks:
+    - name: test
+      params:
+        - name: source-url
+          value: $(params.source-url)
+        - name: source-revision
+          value: $(params.source-revision)
+      taskSpec:
+        params:
+          - name: source-url
+          - name: source-revision
+        steps:
+          - name: test
+            image: gradle:jdk17-jammy
+            script: |-
+              cd `mktemp -d`
+              wget -qO- $(params.source-url) | tar xvz
+              gradle test
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: dotnet-core-7.0-tekton-pipeline
+  labels:
+    apps.tanzu.vmware.com/pipeline: test
+    apps.tanzu.vmware.com/language: dotnet-core
+    apps.tanzu.vmware.com/build-engine: dotnet-7.0
+  namespace: #@ data.values.tap.devNamespace
+spec:
+  params:
+  - name: source-url
+    type: string
+  - name: source-revision
+    type: string
+  tasks:
+  - name: test
+    params:
+    - name: source-url
+      value: $(params.source-url)
+    - name: source-revision
+      value: $(params.source-revision)
+    taskSpec:
+      params:
+      - name: source-url
+        type: string
+      - name: source-revision
+        type: string
+      steps:
+      - image: mcr.microsoft.com/dotnet/sdk:7.0-jammy
+        name: test
+        script: |-
+          #!/usr/bin/env bash
+          function find_csproj_or_sln_file() {
+            local dir=$1
+            local result=""
+            for file in "$dir"/*; do
+                if [[ -d "$file" ]]; then
+                    result=$(find_csproj_or_sln_file "$file")
+                    if [[ "$result" != "" ]]; then
+                        echo "$result"
+                        return
+                    fi
+                elif [[ "$file" == *.csproj || "$file" == *.sln ]]; then
+                    echo "$dir"
+                    return
+                fi
+            done
+          }
+          cd `mktemp -d`
+          wget -qO- $(params.source-url) | tar xvz -m
+          rootDirectory="$(find_csproj_or_sln_file $PWD)"
+          if [[ "$rootDirectory" != "" ]]; then
+            cd $rootDirectory
+            dotnet --version
+            dotnet restore
+            dotnet build --configuration Release --no-restore
+            dotnet test --no-restore --verbosity normal
+          else
+            echo "No source found to build and test."
+          fi
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: dotnet-core-6.0-tekton-pipeline
+  labels:
+    apps.tanzu.vmware.com/pipeline: test
+    apps.tanzu.vmware.com/language: dotnet-core
+    apps.tanzu.vmware.com/build-engine: dotnet-6.0
+  namespace: #@ data.values.tap.devNamespace
+spec:
+  params:
+  - name: source-url
+    type: string
+  - name: source-revision
+    type: string
+  tasks:
+  - name: test
+    params:
+    - name: source-url
+      value: $(params.source-url)
+    - name: source-revision
+      value: $(params.source-revision)
+    taskSpec:
+      params:
+      - name: source-url
+        type: string
+      - name: source-revision
+        type: string
+      steps:
+      - image: mcr.microsoft.com/dotnet/sdk:6.0-jammy
+        name: test
+        script: |-
+          #!/usr/bin/env bash
+          function find_csproj_or_sln_file() {
+            local dir=$1
+            local result=""
+            for file in "$dir"/*; do
+                if [[ -d "$file" ]]; then
+                    result=$(find_csproj_or_sln_file "$file")
+                    if [[ "$result" != "" ]]; then
+                        echo "$result"
+                        return
+                    fi
+                elif [[ "$file" == *.csproj || "$file" == *.sln ]]; then
+                    echo "$dir"
+                    return
+                fi
+            done
+          }
+          cd `mktemp -d`
+          wget -qO- $(params.source-url) | tar xvz -m
+          rootDirectory="$(find_csproj_or_sln_file $PWD)"
+          if [[ "$rootDirectory" != "" ]]; then
+            cd $rootDirectory
+            dotnet --version
+            dotnet restore
+            dotnet build --configuration Release --no-restore
+            dotnet test --no-restore --verbosity normal
+          else
+            echo "No source found to build and test."
+          fi
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: golang-1.20-tekton-pipeline
+  labels:
+    apps.tanzu.vmware.com/pipeline: test
+    apps.tanzu.vmware.com/language: golang
+    apps.tanzu.vmware.com/build-engine: go-1.20
+  namespace: #@ data.values.tap.devNamespace
+spec:
+  params:
+  - name: source-url
+    type: string
+  - name: source-revision
+    type: string
+  tasks:
+  - name: test
+    params:
+    - name: source-url
+      value: $(params.source-url)
+    - name: source-revision
+      value: $(params.source-revision)
+    taskSpec:
+      params:
+      - name: source-url
+        type: string
+      - name: source-revision
+        type: string
+      steps:
+      - image: golang:1.20-bullseye
+        name: test
+        script: |-
+          cd `mktemp -d`
+          wget -qO- $(params.source-url) | tar xvz -m
+          go test
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: angular-v14-tekton-pipeline
+  namespace: #@ data.values.tap.devNamespace
+  labels:
+    apps.tanzu.vmware.com/pipeline: test
+    apps.tanzu.vmware.com/language: angular
+    apps.tanzu.vmware.com/build-engine: angular-v14
+spec:
+  params:
+  - name: source-url
+  - name: source-revision
+  tasks:
+  - name: test
+    params:
+    - name: source-url
+      value: $(params.source-url)
+    - name: source-revision
+      value: $(params.source-revision)
+    taskSpec:
+      params:
+      - name: source-url
+      - name: source-revision
+      steps:
+        - name: test
+          image: node:18-bullseye-slim
+          script: |-
+            cd `mktemp -d`
+            wget -qO- $(params.source-url) | tar xvz -m
+            ng test
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: python-3.10-tekton-pipeline-python
+  namespace: #@ data.values.tap.devNamespace
+  labels:
+    apps.tanzu.vmware.com/pipeline: test
+    apps.tanzu.vmware.com/language: python
+    apps.tanzu.vmware.com/build-engine: python-3.10
+spec:
+  params:
+  - name: source-url
+  - name: source-revision
+  workspaces:
+  - name: supplychain-workspace
+  tasks:
+  - name: test
+    params:
+    - name: source-url
+      value: $(params.source-url)
+    - name: source-revision
+      value: $(params.source-revision)
+    workspaces:
+    - name: supplychain-workspace
+      workspace: supplychain-workspace
+    taskSpec:
+      params:
+      - name: source-url
+      - name: source-revision
+      workspaces:
+      - name: supplychain-workspace
+      steps:
+        - name: test
+          image: python:3.10-bullseye
+          script: |-
+            set -ex
+            cd `mktemp -d`
+            wget -qO- $(params.source-url) | tar xvz -m
+            pytest
