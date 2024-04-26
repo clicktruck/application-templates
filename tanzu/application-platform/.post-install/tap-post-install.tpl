@@ -8,7 +8,7 @@ spec:
   syncPeriod: 1m
   fetch:
   - git:
-      url: https://github.com/clicktruck/gha-workflows-with-gitops-for-tanzu-application-platform
+      url: https://github.com/clicktruck/application-templates
       ref: origin/{{ .git_ref_name }}
       secretRef:
         name: git-https-for-carvel
