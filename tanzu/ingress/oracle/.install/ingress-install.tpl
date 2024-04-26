@@ -17,7 +17,7 @@ spec:
   template:
   - ytt:
       paths:
-      - gitops/tanzu/ingress/oracle/base
+      - tanzu/ingress/oracle/base
 
       valuesFrom:
       - configMapRef:

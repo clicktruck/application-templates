@@ -15,7 +15,7 @@ spec:
   template:
   - ytt:
       paths:
-      - gitops/tanzu/application-platform/profiles/additional/{{ .profile }}
+      - tanzu/application-platform/profiles/additional/{{ .profile }}
 
       valuesFrom:
       - configMapRef:

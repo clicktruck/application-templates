@@ -18,7 +18,7 @@ spec:
   template:
   - ytt:
       paths:
-      - gitops/tanzu/spring-cloud-gateway/base
+      - tanzu/spring-cloud-gateway/base
 
       valuesFrom:
       - secretRef:

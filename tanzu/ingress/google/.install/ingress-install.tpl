@@ -17,7 +17,7 @@ spec:
   template:
   - ytt:
       paths:
-      - gitops/tanzu/ingress/google/base
+      - tanzu/ingress/google/base
 
       valuesFrom:
       - configMapRef:

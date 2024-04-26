@@ -18,7 +18,7 @@ spec:
   template:
   - ytt:
       paths:
-      - gitops/tanzu/application-service-adapter/base
+      - tanzu/application-service-adapter/base
 
       valuesFrom:
       - configMapRef:

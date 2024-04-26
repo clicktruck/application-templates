@@ -17,7 +17,7 @@ spec:
   template:
   - ytt:
       paths:
-      - gitops/tanzu/ingress/azure/base
+      - tanzu/ingress/azure/base
 
       valuesFrom:
       - configMapRef:
