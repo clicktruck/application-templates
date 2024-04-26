@@ -33,9 +33,6 @@ spec:
     service:
       type: LoadBalancer
       annotations: {}
-      nodePorts:
-        http: null
-        https: null
       externalTrafficPolicy: Cluster
       disableWait: false
     hostPorts:
@@ -45,7 +42,6 @@ spec:
     hostNetwork: false
     terminationGracePeriodSeconds: 300
     logLevel: info
-    pspNames: null
   certificates:
     duration: 8760h
     renewBefore: 360h

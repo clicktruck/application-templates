@@ -36,9 +36,6 @@ spec:
         oci.oraclecloud.com/load-balancer-type: "lb"
         service.beta.kubernetes.io/oci-load-balancer-security-list-management-mode: "All"
         service.beta.kubernetes.io/oci-load-balancer-internal: "false"
-      nodePorts:
-        http: null
-        https: null
       disableWait: false
     hostPorts:
       enable: true
@@ -47,7 +44,6 @@ spec:
     hostNetwork: false
     terminationGracePeriodSeconds: 300
     logLevel: info
-    pspNames: null
   certificates:
     duration: 8760h
     renewBefore: 360h
